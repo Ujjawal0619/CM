@@ -1,0 +1,47 @@
+package couponhandler
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	couponservice "github.com/ujjawal0619/cm/couponService"
+)
+
+type CouponHandler struct {
+	couponService couponservice.ICouponService
+}
+
+type ICouponHandler interface {
+	AddCoupon(c *gin.Context)
+	GetAllCoupon(c *gin.Context)
+	GetCouponByID(c *gin.Context)
+	UpdateCouponByID(c *gin.Context)
+	DeleteCouponByID(c *gin.Context)
+}
+
+func InitHandler(couponService couponservice.ICouponService) ICouponHandler {
+	return &CouponHandler{
+		couponService,
+	}
+}
+
+func (h *CouponHandler) AddCoupon(c *gin.Context) {
+
+}
+func (h *CouponHandler) GetAllCoupon(c *gin.Context) {
+	coupons, err := h.couponService.GetAllCoupon(c)
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "no coupon found"})
+	}
+	c.JSON(http.StatusOK, coupons)
+	return
+}
+func (h *CouponHandler) GetCouponByID(c *gin.Context) {
+
+}
+func (h *CouponHandler) UpdateCouponByID(c *gin.Context) {
+
+}
+func (h *CouponHandler) DeleteCouponByID(c *gin.Context) {
+
+}
