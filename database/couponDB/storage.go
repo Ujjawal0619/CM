@@ -43,23 +43,54 @@ func (s *PostgressStore) Init() error {
 		return err
 	}
 
+	if err := s.CreateCouponUsageTable(); err != nil {
+		return err
+	}
+
+	if err := s.CreateBXGYItemTable(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *PostgressStore) CreateCouponTable() error {
 	query := `
-		CREATE TABLE IF NOT EXISTS Coupons (
-			id SERIAL PRIMARY KEY,
-			code VARCHAR(50),
-			discount_type VARCHAR(50),
+		CREATE TABLE IF NOT EXISTS coupons (
+			coupon_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			code VARCHAR(255) UNIQUE NOT NULL,
+			discount_type INT NOT NULL,
 			discount_value DECIMAL(10, 2),
-			start_date TIMESTAMP NOT NULL,
-			end_date TIMESTAMP NOT NULL,
-			min_cart_value DECIMAL(10, 2),
-			applies_to_item JSONB
-		)
-	`
-	// applies_to_ites contains array of sku according to coupon type
+			start_date TIMESTAMP,
+			end_date TIMESTAMP
+		)`
+	_, err := s.db.Exec(query)
+	return err
+}
+
+func (s *PostgressStore) CreateCouponUsageTable() error {
+	query := `
+		CREATE TABLE IF NOT EXISTS coupon_usage (
+			usage_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			coupon_id INT,
+			user_id INT,
+			order_id INT,
+			usage_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (coupon_id) REFERENCES coupons(coupon_id)
+		)`
+	_, err := s.db.Exec(query)
+	return err
+}
+
+func (s *PostgressStore) CreateBXGYItemTable() error {
+	query := `
+		CREATE TABLE IF NOT EXISTS bxgy_items (
+			bxgy_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			coupon_id INT UNIQUE,
+			bx_item_list JSON,
+			gy_item_list JSON,
+			FOREIGN KEY (coupon_id) REFERENCES coupons(coupon_id)
+		)`
 	_, err := s.db.Exec(query)
 	return err
 }
@@ -72,21 +103,17 @@ func (s *PostgressStore) CreateCoupon(c *Coupon) error {
 				discount_type,
 				discount_value,
 				start_date,
-				end_date,
-				min_cart_value,
-				applies_to_item
+				end_date
 			)
 			VALUES(
 				$1,
 				$2,
 				$3,
 				$4,
-				$5,
-				$6,
-				$7
+				$5
 			)	
 		`,
-		c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.MinCartValue, c.AppliesToItem,
+		c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate,
 	)
 	if err != nil {
 		return err
@@ -94,7 +121,29 @@ func (s *PostgressStore) CreateCoupon(c *Coupon) error {
 	return nil
 }
 
-func (s *PostgressStore) UpdateCoupon(*Coupon) error {
+func (s *PostgressStore) UpdateCoupon(c *Coupon) error {
+	_, err := s.db.Query(
+		`
+			UPDATE coupons SET (
+				code,
+				discount_type,
+				discount_value,
+				start_date,
+				end_date
+			)
+			VALUES(
+				$1,
+				$2,
+				$3,
+				$4,
+				$5
+		) WHERE coupon_id = $6
+		`,
+		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.ID,
+	)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -116,7 +165,6 @@ func (s *PostgressStore) GetCoupons() ([]*Coupon, error) {
 		if err != nil {
 			return nil, err
 		}
-
 		coupons = append(coupons, coupon)
 	}
 
@@ -140,12 +188,11 @@ func scanIntoCoupons(rows *sql.Rows) (*Coupon, error) {
 
 	err := rows.Scan(
 		&coupon.ID,
+		&coupon.Code,
 		&coupon.DiscoutType,
 		&coupon.DiscountValue,
 		&coupon.StartDate,
 		&coupon.EndDate,
-		&coupon.MinCartValue,
-		&coupon.AppliesToItem,
 	)
 	return coupon, err
 }

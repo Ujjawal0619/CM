@@ -20,7 +20,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	couponService := couponservice.InitCityService(store)
+	couponService := couponservice.InitCouponService(store)
 	couponHandler := couponhandler.InitHandler(couponService)
 
 	r := gin.New()

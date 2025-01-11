@@ -1,6 +1,7 @@
 package couponhandler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -31,11 +32,14 @@ func (h *CouponHandler) AddCoupon(c *gin.Context) {
 func (h *CouponHandler) GetAllCoupon(c *gin.Context) {
 	coupons, err := h.couponService.GetAllCoupon(c)
 	if err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusNotFound, gin.H{"message": "no coupon found"})
+	} else {
+		c.JSON(http.StatusOK, coupons)
 	}
-	c.JSON(http.StatusOK, coupons)
 	return
 }
+
 func (h *CouponHandler) GetCouponByID(c *gin.Context) {
 
 }

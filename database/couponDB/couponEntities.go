@@ -17,6 +17,4 @@ type Coupon struct {
 	DiscountValue float64    `json:"discountValue"`
 	StartDate     time.Time  `json:"startDate"`
 	EndDate       time.Time  `json:"endDate"`
-	MinCartValue  float64    `json:"minCartValue"`
-	AppliesToItem []string   `json:"appliesToItem"`
 }
