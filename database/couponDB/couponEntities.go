@@ -1,6 +1,9 @@
 package database
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 type CouponType int
 
@@ -11,12 +14,13 @@ const (
 )
 
 type Coupon struct {
-	ID            int64      `json:"id"`
-	Code          string     `json:"code"`
-	DiscoutType   CouponType `json:"discountType"`
-	DiscountValue float64    `json:"discountValue"`
-	StartDate     time.Time  `json:"startDate"`
-	EndDate       time.Time  `json:"endDate"`
+	ID            int64           `json:"id"`
+	Code          string          `json:"code"`
+	DiscoutType   CouponType      `json:"discountType"`
+	DiscountValue float64         `json:"discountValue"`
+	StartDate     time.Time       `json:"startDate"`
+	EndDate       time.Time       `json:"endDate"`
+	Details       json.RawMessage `json:"details"`
 }
 
 type BxGy struct {

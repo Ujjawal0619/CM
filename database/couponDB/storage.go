@@ -64,7 +64,8 @@ func (s *PostgressStore) CreateCouponTable() error {
 			discount_type INT NOT NULL,
 			discount_value DECIMAL(10, 2),
 			start_date TIMESTAMP,
-			end_date TIMESTAMP
+			end_date TIMESTAMP,
+			details JSON
 		)`
 	_, err := s.db.Exec(query)
 	return err
@@ -98,24 +99,30 @@ func (s *PostgressStore) CreateBXGYItemTable() error {
 }
 
 func (s *PostgressStore) CreateCoupon(c *Coupon) error {
-	_, err := s.db.Query(
+	detailsJSON, err := json.Marshal(c.Details)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Query(
 		`
 			INSERT INTO coupons (
 				code,
 				discount_type,
 				discount_value,
 				start_date,
-				end_date
+				end_date,
+				details
 			)
 			VALUES(
 				$1,
 				$2,
 				$3,
 				$4,
-				$5
+				$5,
+				$6
 			)	
 		`,
-		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate,
+		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, detailsJSON,
 	)
 	if err != nil {
 		return err
@@ -124,24 +131,30 @@ func (s *PostgressStore) CreateCoupon(c *Coupon) error {
 }
 
 func (s *PostgressStore) UpdateCoupon(c *Coupon) error {
-	_, err := s.db.Query(
+	detailsJSON, err := json.Marshal(c.Details)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Query(
 		`
 			UPDATE coupons SET (
 				code,
 				discount_type,
 				discount_value,
 				start_date,
-				end_date
+				end_date,
+				details
 			)
 			VALUES(
 				$1,
 				$2,
 				$3,
 				$4,
-				$5
+				$5,
+				$6
 		) WHERE coupon_id = $6
 		`,
-		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.ID,
+		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.ID, string(detailsJSON),
 	)
 	if err != nil {
 		return err
@@ -150,8 +163,38 @@ func (s *PostgressStore) UpdateCoupon(c *Coupon) error {
 }
 
 func (s *PostgressStore) DeleteCoupon(id int) error {
-	_, err := s.db.Query("DELETE FROM coupons WHERE id = $1", id)
-	return err
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	var exists bool
+	err = tx.QueryRow("SELECT EXISTS (SELECT 1 FROM bxgy_items WHERE coupon_id = $1)", id).Scan(&exists)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		_, err = tx.Exec("DELETE FROM bxgy_items WHERE coupon_id = $1", id)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err = tx.Exec("DELETE FROM coupons WHERE id = $1", id)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *PostgressStore) GetCoupons() ([]*Coupon, error) {
@@ -195,6 +238,7 @@ func scanIntoCoupons(rows *sql.Rows) (*Coupon, error) {
 		&coupon.DiscountValue,
 		&coupon.StartDate,
 		&coupon.EndDate,
+		&coupon.Details,
 	)
 	return coupon, err
 }

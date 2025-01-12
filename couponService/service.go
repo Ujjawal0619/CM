@@ -1,8 +1,6 @@
 package couponservice
 
 import (
-	"fmt"
-
 	"github.com/gin-gonic/gin"
 	couponmodal "github.com/ujjawal0619/cm/couponService/modals"
 	database "github.com/ujjawal0619/cm/database/couponDB"
@@ -38,20 +36,21 @@ func (h *CouponService) AddCoupon(c *gin.Context) error {
 	coupon.Code = couponWithBxgy.Code
 	coupon.DiscoutType = couponWithBxgy.DiscoutType
 	coupon.DiscountValue = couponWithBxgy.DiscountValue
+	coupon.Details = couponWithBxgy.Details
 	coupon.StartDate = couponWithBxgy.StartDate
 	coupon.EndDate = couponWithBxgy.EndDate
 
-	bxgy.CouponID = couponWithBxgy.CouponID
-	bxgy.BxItemList = couponWithBxgy.BxItemList
-	bxgy.GyItemList = couponWithBxgy.GyItemList
+	if couponWithBxgy.DiscoutType == 2 {
+		bxgy.CouponID = couponWithBxgy.CouponID
+		bxgy.BxItemList = couponWithBxgy.BxItemList
+		bxgy.GyItemList = couponWithBxgy.GyItemList
 
-	fmt.Println(couponWithBxgy, coupon, bxgy)
-
-	if err := h.DB.CreateCoupon(&coupon); err != nil {
-		return err
+		if err := h.DB.CreateBxGyItem(&bxgy); err != nil {
+			return err
+		}
 	}
 
-	if err := h.DB.CreateBxGyItem(&bxgy); err != nil {
+	if err := h.DB.CreateCoupon(&coupon); err != nil {
 		return err
 	}
 
@@ -73,3 +72,15 @@ func (h *CouponService) UpdateCouponByID(c *gin.Context) {
 func (h *CouponService) DeleteCouponByID(c *gin.Context) {
 
 }
+
+// {
+// 	"code": "NEWYEAR20",
+// 	"discountType": 2,
+// 	"discountValue": 20,
+// 	"startDate": "2024-02-15T00:00:00Z",
+// 	"endDate": "2025-03-15T00:00:00Z",
+// 	"details": {"disc": "use bxgy_items table for more details"},
+// 	"couponId": 15,
+// 	"bxItemList": ["SKU4", "SKU5"],
+// 	"gyItemList": ["SKU1", "SKU2", "SKU3"]
+//   }
