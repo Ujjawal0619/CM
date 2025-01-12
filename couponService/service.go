@@ -1,6 +1,8 @@
 package couponservice
 
 import (
+	"strconv"
+
 	"github.com/gin-gonic/gin"
 	couponmodal "github.com/ujjawal0619/cm/couponService/modals"
 	database "github.com/ujjawal0619/cm/database/couponDB"
@@ -13,9 +15,9 @@ type CouponService struct {
 type ICouponService interface {
 	AddCoupon(c *gin.Context) error
 	GetAllCoupon(c *gin.Context) ([]*database.Coupon, error)
-	GetCouponByID(c *gin.Context)
-	UpdateCouponByID(c *gin.Context)
-	DeleteCouponByID(c *gin.Context)
+	GetCouponByID(c *gin.Context) (*database.Coupon, error)
+	UpdateCouponByID(c *gin.Context) error
+	DeleteCouponByID(c *gin.Context) error
 }
 
 func InitCouponService(db database.Storage) ICouponService {
@@ -61,16 +63,33 @@ func (h *CouponService) GetAllCoupon(c *gin.Context) ([]*database.Coupon, error)
 	return h.DB.GetCoupons()
 }
 
-func (h *CouponService) GetCouponByID(c *gin.Context) {
-
+func (h *CouponService) GetCouponByID(c *gin.Context) (*database.Coupon, error) {
+	couponId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return nil, err
+	}
+	return h.DB.GetCouponByID(couponId)
 }
 
-func (h *CouponService) UpdateCouponByID(c *gin.Context) {
+func (h *CouponService) UpdateCouponByID(c *gin.Context) error {
+	couponId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return err
+	}
+	var coupon database.Coupon
+	if err := c.BindJSON(&coupon); err != nil {
+		return err
+	}
 
+	return h.DB.UpdateCouponByID(couponId, &coupon)
 }
 
-func (h *CouponService) DeleteCouponByID(c *gin.Context) {
-
+func (h *CouponService) DeleteCouponByID(c *gin.Context) error {
+	couponId, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return err
+	}
+	return h.DB.DeleteCouponByID(couponId)
 }
 
 // {

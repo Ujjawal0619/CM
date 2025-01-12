@@ -10,8 +10,8 @@ import (
 
 type Storage interface {
 	CreateCoupon(*Coupon) error
-	DeleteCoupon(int) error
-	UpdateCoupon(*Coupon) error
+	DeleteCouponByID(int) error
+	UpdateCouponByID(int, *Coupon) error
 	GetCoupons() ([]*Coupon, error)
 	GetCouponByID(int) (*Coupon, error)
 	CreateBxGyItem(*BxGy) error
@@ -130,7 +130,7 @@ func (s *PostgressStore) CreateCoupon(c *Coupon) error {
 	return nil
 }
 
-func (s *PostgressStore) UpdateCoupon(c *Coupon) error {
+func (s *PostgressStore) UpdateCouponByID(couponID int, c *Coupon) error {
 	detailsJSON, err := json.Marshal(c.Details)
 	if err != nil {
 		return err
@@ -152,9 +152,9 @@ func (s *PostgressStore) UpdateCoupon(c *Coupon) error {
 				$4,
 				$5,
 				$6
-		) WHERE coupon_id = $6
+		) WHERE coupon_id = $7
 		`,
-		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.ID, string(detailsJSON),
+		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.ID, string(detailsJSON), couponID,
 	)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (s *PostgressStore) UpdateCoupon(c *Coupon) error {
 	return nil
 }
 
-func (s *PostgressStore) DeleteCoupon(id int) error {
+func (s *PostgressStore) DeleteCouponByID(id int) error {
 	tx, err := s.db.Begin()
 	if err != nil {
 		return err

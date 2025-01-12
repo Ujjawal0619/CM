@@ -18,6 +18,7 @@ type ICouponHandler interface {
 	GetCouponByID(c *gin.Context)
 	UpdateCouponByID(c *gin.Context)
 	DeleteCouponByID(c *gin.Context)
+	AddBxGy(c *gin.Context)
 }
 
 func InitHandler(couponService couponservice.ICouponService) ICouponHandler {
@@ -46,11 +47,20 @@ func (h *CouponHandler) GetAllCoupon(c *gin.Context) {
 }
 
 func (h *CouponHandler) GetCouponByID(c *gin.Context) {
-
+	coupon, err := h.couponService.GetCouponByID(c)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"message": "coupon does not exist with id:" + c.Param("id")})
+	} else {
+		c.JSON(http.StatusOK, coupon)
+	}
 }
 func (h *CouponHandler) UpdateCouponByID(c *gin.Context) {
 
 }
 func (h *CouponHandler) DeleteCouponByID(c *gin.Context) {
+
+}
+func (h *CouponHandler) AddBxGy(c *gin.Context) {
 
 }

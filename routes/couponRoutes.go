@@ -6,6 +6,8 @@ import (
 )
 
 func CouponRoutes(router *gin.Engine, handler couponhandler.ICouponHandler) {
-	router.GET("/coupons", handler.GetAllCoupon)
 	router.POST("/coupons", handler.AddCoupon)
+	router.GET("/coupons", handler.GetAllCoupon)
+	router.GET("/coupons/:id", handler.GetCouponByID)
+	router.POST("/coupons/bxgy", handler.AddBxGy)
 }
