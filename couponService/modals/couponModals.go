@@ -1,22 +1,10 @@
 package couponmodal
 
-import "time"
-
-type CouponType int
-
-const (
-	CART_WISE CouponType = iota
-	PRODUCT_WISE
-	BXGY
+import (
+	database "github.com/ujjawal0619/cm/database/couponDB"
 )
 
-type Coupon struct {
-	ID            int64      `json:"id"`
-	Code          string     `json:"code"`
-	DiscoutType   CouponType `json:"discountType"`
-	DiscountValue float64    `json:"discountValue"`
-	StartDate     time.Time  `json:"startDate"`
-	EndDate       time.Time  `json:"endDate"`
-	MinCartValue  float64    `json:"minCartValue"`
-	AppliesToItem []string   `json:"appliesToItem"`
+type CouponWithBxGy struct {
+	database.Coupon
+	database.BxGy
 }

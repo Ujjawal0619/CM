@@ -18,3 +18,10 @@ type Coupon struct {
 	StartDate     time.Time  `json:"startDate"`
 	EndDate       time.Time  `json:"endDate"`
 }
+
+type BxGy struct {
+	ID         int64    `json:"id"`
+	CouponID   int64    `json:"couponId"`
+	BxItemList []string `json:"bxItemList"`
+	GyItemList []string `josn:"gyItemList"`
+}

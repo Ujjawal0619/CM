@@ -27,7 +27,13 @@ func InitHandler(couponService couponservice.ICouponService) ICouponHandler {
 }
 
 func (h *CouponHandler) AddCoupon(c *gin.Context) {
-
+	err := h.couponService.AddCoupon(c)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusCreated, gin.H{"message": "Coupon created successfully"})
+	}
 }
 func (h *CouponHandler) GetAllCoupon(c *gin.Context) {
 	coupons, err := h.couponService.GetAllCoupon(c)
@@ -37,7 +43,6 @@ func (h *CouponHandler) GetAllCoupon(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusOK, coupons)
 	}
-	return
 }
 
 func (h *CouponHandler) GetCouponByID(c *gin.Context) {

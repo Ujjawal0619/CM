@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 
 	_ "github.com/lib/pq"
@@ -13,6 +14,7 @@ type Storage interface {
 	UpdateCoupon(*Coupon) error
 	GetCoupons() ([]*Coupon, error)
 	GetCouponByID(int) (*Coupon, error)
+	CreateBxGyItem(*BxGy) error
 }
 
 type PostgressStore struct {
@@ -113,7 +115,7 @@ func (s *PostgressStore) CreateCoupon(c *Coupon) error {
 				$5
 			)	
 		`,
-		c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate,
+		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate,
 	)
 	if err != nil {
 		return err
@@ -195,4 +197,32 @@ func scanIntoCoupons(rows *sql.Rows) (*Coupon, error) {
 		&coupon.EndDate,
 	)
 	return coupon, err
+}
+
+func (s *PostgressStore) CreateBxGyItem(i *BxGy) error {
+	bxItemListJSON, err := json.Marshal(i.BxItemList)
+	if err != nil {
+		return err
+	}
+
+	gyItemListJSON, err := json.Marshal(i.GyItemList)
+	if err != nil {
+		return err
+	}
+	_, err = s.db.Query(
+		`
+			INSERT INTO bxgy_items (
+				coupon_id,
+				bx_item_list,
+				gy_item_list
+			)
+			VALUES(
+				$1,
+				$2,
+				$3
+			)	
+		`,
+		i.CouponID, string(bxItemListJSON), string(gyItemListJSON),
+	)
+	return err
 }
