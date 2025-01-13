@@ -18,7 +18,8 @@ type ICouponHandler interface {
 	GetCouponByID(c *gin.Context)
 	UpdateCouponByID(c *gin.Context)
 	DeleteCouponByID(c *gin.Context)
-	AddBxGy(c *gin.Context)
+	GetApplicableCoupons(c *gin.Context)
+	ApplyCouponByID(c *gin.Context)
 }
 
 func InitHandler(couponService couponservice.ICouponService) ICouponHandler {
@@ -56,11 +57,34 @@ func (h *CouponHandler) GetCouponByID(c *gin.Context) {
 	}
 }
 func (h *CouponHandler) UpdateCouponByID(c *gin.Context) {
-
+	err := h.couponService.UpdateCouponByID(c)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Invalid coupon id:" + c.Param("id")})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "coupon id:" + c.Param("id") + " updated"})
+	}
 }
 func (h *CouponHandler) DeleteCouponByID(c *gin.Context) {
-
+	err := h.couponService.DeleteCouponByID(c)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Invalid coupon id:" + c.Param("id")})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"message": "coupon id:" + c.Param("id") + " deleted"})
+	}
 }
-func (h *CouponHandler) AddBxGy(c *gin.Context) {
 
+func (h *CouponHandler) GetApplicableCoupons(c *gin.Context) {
+	applicableCoupon, err := h.couponService.GetApplicableCoupons(c)
+	if err != nil {
+		fmt.Println(err)
+		c.JSON(http.StatusNotFound, gin.H{"message": "Something went wrong."})
+	} else {
+		c.JSON(http.StatusOK, applicableCoupon)
+	}
+}
+
+func (h *CouponHandler) ApplyCouponByID(c *gin.Context) {
+	// TODO
 }

@@ -14,7 +14,9 @@ type Storage interface {
 	UpdateCouponByID(int, *Coupon) error
 	GetCoupons() ([]*Coupon, error)
 	GetCouponByID(int) (*Coupon, error)
+	GetCouponByCode(string) (*Coupon, error)
 	CreateBxGyItem(*BxGy) error
+	GetBxGyItemsByID(int) (*BxGy, error)
 }
 
 type PostgressStore struct {
@@ -59,7 +61,7 @@ func (s *PostgressStore) Init() error {
 func (s *PostgressStore) CreateCouponTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS coupons (
-			coupon_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			code VARCHAR(255) UNIQUE NOT NULL,
 			discount_type INT NOT NULL,
 			discount_value DECIMAL(10, 2),
@@ -74,12 +76,12 @@ func (s *PostgressStore) CreateCouponTable() error {
 func (s *PostgressStore) CreateCouponUsageTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS coupon_usage (
-			usage_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			coupon_id INT,
 			user_id INT,
 			order_id INT,
 			usage_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-			FOREIGN KEY (coupon_id) REFERENCES coupons(coupon_id)
+			FOREIGN KEY (coupon_id) REFERENCES coupons(id)
 		)`
 	_, err := s.db.Exec(query)
 	return err
@@ -88,11 +90,11 @@ func (s *PostgressStore) CreateCouponUsageTable() error {
 func (s *PostgressStore) CreateBXGYItemTable() error {
 	query := `
 		CREATE TABLE IF NOT EXISTS bxgy_items (
-			bxgy_id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+			id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
 			coupon_id INT UNIQUE,
 			bx_item_list JSON,
 			gy_item_list JSON,
-			FOREIGN KEY (coupon_id) REFERENCES coupons(coupon_id)
+			FOREIGN KEY (coupon_id) REFERENCES coupons(id)
 		)`
 	_, err := s.db.Exec(query)
 	return err
@@ -122,7 +124,7 @@ func (s *PostgressStore) CreateCoupon(c *Coupon) error {
 				$6
 			)	
 		`,
-		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, detailsJSON,
+		c.Code, c.DiscountType, c.DiscountValue, c.StartDate, c.EndDate, detailsJSON,
 	)
 	if err != nil {
 		return err
@@ -154,7 +156,7 @@ func (s *PostgressStore) UpdateCouponByID(couponID int, c *Coupon) error {
 				$6
 		) WHERE coupon_id = $7
 		`,
-		c.Code, c.DiscoutType, c.DiscountValue, c.StartDate, c.EndDate, c.ID, string(detailsJSON), couponID,
+		c.Code, c.DiscountType, c.DiscountValue, c.StartDate, c.EndDate, c.ID, string(detailsJSON), couponID,
 	)
 	if err != nil {
 		return err
@@ -225,7 +227,19 @@ func (s *PostgressStore) GetCouponByID(id int) (*Coupon, error) {
 	for rows.Next() {
 		return scanIntoCoupons(rows)
 	}
-	return nil, fmt.Errorf("coupon %d not found", id)
+	return nil, fmt.Errorf("coupon %d not found\n", id)
+}
+
+func (s *PostgressStore) GetCouponByCode(code string) (*Coupon, error) {
+	rows, err := s.db.Query("SELECT * FROM coupons WHERE code = $1", code)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoCoupons(rows)
+	}
+	return nil, fmt.Errorf("coupon with code: %s not found\n", code)
 }
 
 func scanIntoCoupons(rows *sql.Rows) (*Coupon, error) {
@@ -234,7 +248,7 @@ func scanIntoCoupons(rows *sql.Rows) (*Coupon, error) {
 	err := rows.Scan(
 		&coupon.ID,
 		&coupon.Code,
-		&coupon.DiscoutType,
+		&coupon.DiscountType,
 		&coupon.DiscountValue,
 		&coupon.StartDate,
 		&coupon.EndDate,
@@ -269,4 +283,28 @@ func (s *PostgressStore) CreateBxGyItem(i *BxGy) error {
 		i.CouponID, string(bxItemListJSON), string(gyItemListJSON),
 	)
 	return err
+}
+
+func (s *PostgressStore) GetBxGyItemsByID(couponID int) (*BxGy, error) {
+	rows, err := s.db.Query("SELECT * FROM bxgy_items WHERE id = $1", couponID)
+	if err != nil {
+		return nil, err
+	}
+
+	for rows.Next() {
+		return scanIntoBxGyItems(rows)
+	}
+	return nil, fmt.Errorf("BxGy for CouponID %d does not exist", couponID)
+}
+
+func scanIntoBxGyItems(rows *sql.Rows) (*BxGy, error) {
+	bxgy := &BxGy{}
+
+	err := rows.Scan(
+		&bxgy.ID,
+		&bxgy.CouponID,
+		&bxgy.BxItemList,
+		&bxgy.GyItemList,
+	)
+	return bxgy, err
 }
